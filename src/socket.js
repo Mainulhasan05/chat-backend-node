@@ -98,17 +98,16 @@ const setupSocket = (io) => {
       }
     });
 
-    socket.on("typing", async ({ token, roomId }) => {
+    socket.on("typing", async ({ username, token, roomId }) => {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        const user = await User.findByPk(decoded.id);
+        // const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        // const user = await User.findByPk(decoded.id);
+        // if (!user) {
+        //   socket.emit("error", "Invalid user.");
+        //   return;
+        // }
 
-        if (!user) {
-          socket.emit("error", "Invalid user.");
-          return;
-        }
-
-        socket.to(roomId).emit("typing", user.username);
+        socket.to(roomId).emit("typing", `${username} is typing...`);
       } catch (error) {
         socket.emit("error", "Authentication failed.");
       }

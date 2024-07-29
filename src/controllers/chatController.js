@@ -5,10 +5,10 @@ const sendResponse = require("../utils/sendResponse");
 
 exports.sendMessage = async (req, res) => {
   const { chatRoomId, content } = req.body;
-  const { id: userId } = req.id;
+  const userId = req.user.id;
 
   try {
-    const message = await Message.create({ userId, content });
+    const message = await Message.create({ userId, content, chatRoomId });
     res.send(message);
   } catch (err) {
     res.status(400).send(err);
@@ -22,29 +22,29 @@ exports.getMessages = async (req, res) => {
   const { chatRoomId = 1 } = req.params;
 
   try {
-    const { id: userId } = req.id;
+    const userId = req.user.id;
 
     const user = await User.findOne({ where: { id: userId } });
 
-    let sortQuery = [];
-    sortQuery.push(["createdAt", "DESC"]);
+    const sortQuery = [["createdAt", "DESC"]];
+
     const messages = await Message.findAll({
       where: { chatRoomId },
       limit: limit,
+      offset: (page - 1) * limit,
       order: sortQuery,
       include: {
         model: User,
-        as: "user",
-        foreignKey: "id",
+        attributes: ["id", "username"], // Specify which user attributes you want to include
       },
     });
 
-    sendResponse(res, 200, true, "Messages Retrive Successfully", {
+    sendResponse(res, 200, true, "Messages Retrieved Successfully", {
       messages,
       user,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(400).send(err);
   }
 };
