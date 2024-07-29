@@ -60,7 +60,7 @@ exports.joinOrCreateRoom = async (req, res) => {
       if (chatRoom.password) {
         const validPassword = await bcrypt.compare(password, chatRoom.password);
         if (!validPassword) {
-          return sendResponse(res, 400, false, "Invalid password", null);
+          return sendResponse(res, 400, false, "পাসওয়ার্ড সঠিক নয়", null);
         }
       }
 
@@ -71,8 +71,6 @@ exports.joinOrCreateRoom = async (req, res) => {
       });
 
       if (!userChatRoom) {
-        // If not, associate the user with the existing chat room
-        console.log(userId, "going to associate", chatRoom.id);
         await UserChatRoom.create({ UserId: userId, ChatRoomId: chatRoom.id });
       }
 
