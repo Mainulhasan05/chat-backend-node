@@ -5,24 +5,7 @@ const ChatRoom = require("./chatRoomModel");
 
 const UserChatRoom = sequelize.define(
   "UserChatRoom",
-  {
-    // userId: {
-    //   type: DataTypes.INTEGER,
-    //   allowNull: false,
-    //   references: {
-    //     model: User,
-    //     key: "id",
-    //   },
-    // },
-    // chatRoomId: {
-    //   type: DataTypes.INTEGER,
-    //   allowNull: false,
-    //   references: {
-    //     model: ChatRoom,
-    //     key: "id",
-    //   },
-    // },
-  },
+  {},
   {
     timestamps: false,
   }

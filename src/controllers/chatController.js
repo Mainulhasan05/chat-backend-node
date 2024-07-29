@@ -4,7 +4,7 @@ const User = require("../models/userModel");
 const sendResponse = require("../utils/sendResponse");
 
 exports.sendMessage = async (req, res) => {
-  const { chatRoomId = 1, content } = req.body;
+  const { chatRoomId, content } = req.body;
   const { id: userId } = req.id;
 
   try {

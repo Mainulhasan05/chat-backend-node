@@ -8,10 +8,9 @@ const setupSocket = (io) => {
   io.on("connection", (socket) => {
     console.log("New connection", socket.id);
 
-    // Handle user joining a room
     socket.on("joinRoom", async ({ token, roomId }) => {
       try {
-        const decoded = jwt.verify(token, "your_jwt_secret_key");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
         const user = await User.findByPk(decoded.id);
         const chatRoom = await ChatRoom.findByPk(roomId);
 
@@ -21,10 +20,15 @@ const setupSocket = (io) => {
         }
 
         socket.join(roomId);
+
         if (!activeUsers[roomId]) {
           activeUsers[roomId] = [];
         }
-        activeUsers[roomId].push(user.id);
+
+        if (!activeUsers[roomId].includes(user.id)) {
+          activeUsers[roomId].push(user.id);
+        }
+
         io.to(roomId).emit("activeUsers", activeUsers[roomId]);
 
         console.log(`User ${user.username} joined room ${roomId}`);
@@ -33,36 +37,81 @@ const setupSocket = (io) => {
       }
     });
 
-    // Handle user leaving a room
-    socket.on("leaveRoom", ({ roomId }) => {
-      socket.leave(roomId);
-      activeUsers[roomId] = activeUsers[roomId].filter(
-        (id) => id !== socket.id
-      );
-      io.to(roomId).emit("activeUsers", activeUsers[roomId]);
+    socket.on("leaveRoom", async ({ token, roomId }) => {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const user = await User.findByPk(decoded.id);
 
-      console.log(`User ${socket.id} left room ${roomId}`);
+        if (!user) {
+          socket.emit("error", "Invalid user.");
+          return;
+        }
+
+        socket.leave(roomId);
+
+        if (activeUsers[roomId]) {
+          activeUsers[roomId] = activeUsers[roomId].filter(
+            (id) => id !== user.id
+          );
+
+          if (activeUsers[roomId].length === 0) {
+            delete activeUsers[roomId];
+          } else {
+            io.to(roomId).emit("activeUsers", activeUsers[roomId]);
+          }
+        }
+
+        console.log(`User ${user.username} left room ${roomId}`);
+      } catch (error) {
+        socket.emit("error", "Authentication failed.");
+      }
     });
 
-    // Handle user disconnect
     socket.on("disconnect", () => {
       console.log(`User disconnected ${socket.id}`);
       for (const roomId in activeUsers) {
         activeUsers[roomId] = activeUsers[roomId].filter(
           (id) => id !== socket.id
         );
-        io.to(roomId).emit("activeUsers", activeUsers[roomId]);
+
+        if (activeUsers[roomId].length === 0) {
+          delete activeUsers[roomId];
+        } else {
+          io.to(roomId).emit("activeUsers", activeUsers[roomId]);
+        }
       }
     });
 
-    // Handle new message
-    socket.on("new_message", ({ roomId, message }) => {
-      io.to(roomId).emit("new_message", message);
+    socket.on("new_message", async ({ token, roomId, message }) => {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const user = await User.findByPk(decoded.id);
+
+        if (!user) {
+          socket.emit("error", "Invalid user.");
+          return;
+        }
+
+        io.to(roomId).emit("new_message", { user: user.username, message });
+      } catch (error) {
+        socket.emit("error", "Authentication failed.");
+      }
     });
 
-    // Handle typing
-    socket.on("typing", ({ roomId, username }) => {
-      socket.to(roomId).emit("typing", username);
+    socket.on("typing", async ({ token, roomId }) => {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const user = await User.findByPk(decoded.id);
+
+        if (!user) {
+          socket.emit("error", "Invalid user.");
+          return;
+        }
+
+        socket.to(roomId).emit("typing", user.username);
+      } catch (error) {
+        socket.emit("error", "Authentication failed.");
+      }
     });
   });
 };
