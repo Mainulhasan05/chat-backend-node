@@ -6,13 +6,8 @@ exports.authenticate = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, "your_jwt_secret_key");
-    const user = await User.findByPk(decoded.id);
 
-    if (!user) {
-      throw new Error();
-    }
-
-    req.user = user;
+    req.user = decoded;
     next();
   } catch (err) {
     res.status(401).send({ error: "Please authenticate." });

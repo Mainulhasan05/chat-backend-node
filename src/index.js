@@ -12,10 +12,9 @@ const chatRoomRoutes = require("./routes/chatRoomRoutes");
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
-
-app.use(cors());
 
 app.use("/uploads", express.static("uploads"));
 

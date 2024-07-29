@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const dotenv = require("dotenv");
+dotenv.config();
 const User = require("../models/userModel");
 const ChatRoom = require("../models/chatRoomModel");
 const sendResponse = require("../utils/sendResponse");
