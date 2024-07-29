@@ -1,21 +1,26 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
+const User = require("./userModel");
 
-const User = sequelize.define(
-  "User",
+const ChatRoom = sequelize.define(
+  "ChatRoom",
   {
-    username: {
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
-    },
-    last_seen: {
-      type: DataTypes.DATE,
       allowNull: true,
+    },
+    ownerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
   },
   {
@@ -23,4 +28,4 @@ const User = sequelize.define(
   }
 );
 
-module.exports = User;
+module.exports = ChatRoom;

@@ -1,38 +1,70 @@
-const socketio = require('socket.io');
-const jwt = require('jsonwebtoken');
-const Message = require('./models/Message');
-const ChatRoom = require('./models/chatRoom');
+const jwt = require("jsonwebtoken");
+const User = require("./models/userModel");
+const ChatRoom = require("./models/chatRoomModel");
 
-const setupSocket = (server) => {
-    const io = socketio(server);
+const setupSocket = (io) => {
+  let activeUsers = {};
 
-    io.use((socket, next) => {
-        const token = socket.handshake.query.token;
-        if (token) {
-            jwt.verify(token, 'your_jwt_secret_key', (err, decoded) => {
-                if (err) return next(new Error('Authentication error'));
-                socket.user = decoded;
-                next();
-            });
-        } else {
-            next(new Error('Authentication error'));
+  io.on("connection", (socket) => {
+    console.log("New connection", socket.id);
+
+    // Handle user joining a room
+    socket.on("joinRoom", async ({ token, roomId }) => {
+      try {
+        const decoded = jwt.verify(token, "your_jwt_secret_key");
+        const user = await User.findByPk(decoded.id);
+        const chatRoom = await ChatRoom.findByPk(roomId);
+
+        if (!user || !chatRoom) {
+          socket.emit("error", "Invalid user or room.");
+          return;
         }
+
+        socket.join(roomId);
+        if (!activeUsers[roomId]) {
+          activeUsers[roomId] = [];
+        }
+        activeUsers[roomId].push(user.id);
+        io.to(roomId).emit("activeUsers", activeUsers[roomId]);
+
+        console.log(`User ${user.username} joined room ${roomId}`);
+      } catch (error) {
+        socket.emit("error", "Authentication failed.");
+      }
     });
 
-    io.on('connection', (socket) => {
-        socket.on('joinRoom', ({ chatRoomId }) => {
-            socket.join(chatRoomId);
-        });
+    // Handle user leaving a room
+    socket.on("leaveRoom", ({ roomId }) => {
+      socket.leave(roomId);
+      activeUsers[roomId] = activeUsers[roomId].filter(
+        (id) => id !== socket.id
+      );
+      io.to(roomId).emit("activeUsers", activeUsers[roomId]);
 
-        socket.on('sendMessage', async ({ chatRoomId, content }) => {
-            const message = await Message.create({
-                userId: socket.user.id,
-                chatRoomId,
-                content
-            });
-            io.to(chatRoomId).emit('newMessage', message);
-        });
+      console.log(`User ${socket.id} left room ${roomId}`);
     });
+
+    // Handle user disconnect
+    socket.on("disconnect", () => {
+      console.log(`User disconnected ${socket.id}`);
+      for (const roomId in activeUsers) {
+        activeUsers[roomId] = activeUsers[roomId].filter(
+          (id) => id !== socket.id
+        );
+        io.to(roomId).emit("activeUsers", activeUsers[roomId]);
+      }
+    });
+
+    // Handle new message
+    socket.on("new_message", ({ roomId, message }) => {
+      io.to(roomId).emit("new_message", message);
+    });
+
+    // Handle typing
+    socket.on("typing", ({ roomId, username }) => {
+      socket.to(roomId).emit("typing", username);
+    });
+  });
 };
 
 module.exports = setupSocket;

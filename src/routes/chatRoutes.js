@@ -1,9 +1,11 @@
-const express = require('express');
-const { sendMessage, getMessages } = require('../controllers/chatController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const express = require("express");
+const { sendMessage, getMessages } = require("../controllers/chatController");
+const { authenticate } = require("../middlewares/authMiddleware");
 const router = express.Router();
+// const configureMulter = require("../utils/multerConfig");
+// const uploads = configureMulter("/uploads");
 
-router.post('/messages', authMiddleware, sendMessage);
-router.get('/messages/:chatRoomId', authMiddleware, getMessages);
+router.post("/send", authenticate, sendMessage);
+router.get("/get-messages/:chatRoomId", authenticate, getMessages);
 
 module.exports = router;
