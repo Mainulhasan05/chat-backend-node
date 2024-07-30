@@ -82,21 +82,29 @@ const setupSocket = (io) => {
       }
     });
 
-    socket.on("new_message", async ({ token, roomId, message }) => {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        const user = await User.findByPk(decoded.id);
+    socket.on(
+      "new_message",
+      async ({ token, roomId, username, content, userId, createdAt }) => {
+        try {
+          // const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+          // const user = await User.findByPk(decoded.id);
 
-        if (!user) {
-          socket.emit("error", "Invalid user.");
-          return;
+          // if (!user) {
+          //   socket.emit("error", "Invalid user.");
+          //   return;
+          // }
+
+          io.to(roomId).emit("new_message", {
+            username,
+            userId,
+            content,
+            createdAt,
+          });
+        } catch (error) {
+          socket.emit("error", "Authentication failed.");
         }
-
-        io.to(roomId).emit("new_message", { user: user.username, message });
-      } catch (error) {
-        socket.emit("error", "Authentication failed.");
       }
-    });
+    );
 
     socket.on("typing", async ({ username, token, roomId }) => {
       try {

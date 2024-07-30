@@ -4,12 +4,12 @@ const dotenv = require("dotenv");
 dotenv.config();
 const User = require("../models/userModel");
 const ChatRoom = require("../models/chatRoomModel");
+const UserChatRoom = require("../models/userChatRoom");
 const sendResponse = require("../utils/sendResponse");
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
 
-  // Validate input lengths
   if (username.length < 2) {
     return res
       .status(400)
@@ -35,6 +35,26 @@ exports.login = async (req, res) => {
       // User does not exist, create new user
       const hashedPassword = await bcrypt.hash(password, 10);
       user = await User.create({ username, password: hashedPassword });
+    }
+
+    // Search for the public_chat room
+    const publicChatRoom = await ChatRoom.findOne({
+      where: { name: "public_room" },
+    });
+
+    if (publicChatRoom) {
+      // Check if the user is already associated with the public_chat room
+      const userChatRoom = await UserChatRoom.findOne({
+        where: { UserId: user.id, ChatRoomId: publicChatRoom.id },
+      });
+
+      if (!userChatRoom) {
+        // If the user is not associated, create the association
+        await UserChatRoom.create({
+          UserId: user.id,
+          ChatRoomId: publicChatRoom.id,
+        });
+      }
     }
 
     // Generate token
