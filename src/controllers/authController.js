@@ -10,10 +10,10 @@ const sendResponse = require("../utils/sendResponse");
 exports.login = async (req, res) => {
   const { username, password } = req.body;
 
-  if (username.length < 2) {
+  if (username.length < 3) {
     return res
       .status(400)
-      .json({ error: "Username must be at least 2 characters long" });
+      .json({ error: "Username must be at least 3 characters long" });
   }
   if (password.length < 5) {
     return res
@@ -29,7 +29,7 @@ exports.login = async (req, res) => {
       // User exists, validate password
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
-        return sendResponse(res, 400, false, "Invalid password", null);
+        return res.status(400).json({ error: "Password doesn't match" });
       }
     } else {
       // User does not exist, create new user
