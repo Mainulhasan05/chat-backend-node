@@ -43,7 +43,7 @@ exports.getPrivateMessages = async (req, res) => {
 
     const messages = await Message.findAndCountAll({
       where: whereClause,
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
       limit: parseInt(limit, 10),
       offset: parseInt(offset, 10),
     });

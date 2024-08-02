@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
       user: newUser,
     });
   } catch (error) {
-    return sendResponse(res, 500, false, "Internal server error", null);
+    return sendResponse(res, 500, false, error.message, null);
   }
 };
 
@@ -66,6 +66,18 @@ exports.login = async (req, res) => {
 
     return sendResponse(res, 200, true, "Login successful", { token, user });
   } catch (error) {
-    return sendResponse(res, 500, false, "Internal server error", null);
+    return sendResponse(res, 500, false, error.message, null);
+  }
+};
+
+exports.getUserProfile = async (req, res) => {
+  const { id: userId } = req.user;
+  try {
+    const user = await User.findByPk(userId);
+    return sendResponse(res, 200, true, "User profile retrieved successfully", {
+      user,
+    });
+  } catch (error) {
+    return sendResponse(res, 500, false, error.message, null);
   }
 };

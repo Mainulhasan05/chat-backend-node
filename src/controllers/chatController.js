@@ -22,8 +22,10 @@ exports.getUserChats = async (req, res) => {
         "recipient_id",
       ],
       group: ["sender_id", "recipient_id"],
-      // order: [[fn("MAX", col("createdAt")), "DESC"]],
     });
+
+    // Keep track of unique user IDs
+    const uniqueUserIds = new Set();
 
     // Retrieve the last message details for each private chat
     const privateChatDetails = await Promise.all(
@@ -31,11 +33,16 @@ exports.getUserChats = async (req, res) => {
         const otherUserId =
           chat.sender_id === userId ? chat.recipient_id : chat.sender_id;
 
+        if (uniqueUserIds.has(otherUserId)) {
+          return null;
+        }
+
+        uniqueUserIds.add(otherUserId);
+
         // Fetch last message based on timestamp
         const lastMessage = await Message.findOne({
           where: {
             [Op.and]: [
-              // { createdAt: chat.lastMessageTime },
               {
                 [Op.or]: [
                   { sender_id: userId, recipient_id: otherUserId },
@@ -58,6 +65,11 @@ exports.getUserChats = async (req, res) => {
       })
     );
 
+    // Filter out null values
+    const filteredPrivateChatDetails = privateChatDetails.filter(
+      (chat) => chat !== null
+    );
+
     // Get group memberships
     const groupMemberships = await GroupMember.findAll({
       where: { user_id: userId },
@@ -70,7 +82,6 @@ exports.getUserChats = async (req, res) => {
         const group = membership.group;
         const lastGroupMessage = await GroupMessage.findOne({
           where: { group_id: group.id },
-          // order: [["createdAt", "DESC"]],
         });
 
         return {
@@ -81,7 +92,7 @@ exports.getUserChats = async (req, res) => {
     );
 
     return sendResponse(res, 200, true, "Chats retrieved successfully", {
-      privateChats: privateChatDetails,
+      privateChats: filteredPrivateChatDetails,
       groupChats,
     });
   } catch (error) {
