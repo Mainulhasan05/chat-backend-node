@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const express = require("express");
+const path = require("path");
 const http = require("http");
 const cors = require("cors");
 const sequelize = require("./config/database");
@@ -11,12 +12,19 @@ const messageRoutes = require("./routes/messageRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
+app.use(
+  "/uploads/images/avatar",
+  express.static(path.join(__dirname, "../uploads/images/avatar"))
+);
+app.use(
+  "/uploads/images/photos",
+  express.static(path.join(__dirname, "../uploads/images/photos"))
+);
+
 app.use(express.json());
 app.use(cors());
 const server = http.createServer(app);
 const io = require("socket.io")(server, { cors: { origin: "*" } });
-
-app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.send("Hello World");
