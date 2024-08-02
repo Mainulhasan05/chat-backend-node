@@ -6,9 +6,9 @@ const cors = require("cors");
 const sequelize = require("./config/database");
 const setupSocket = require("./socket");
 const authRoutes = require("./routes/authRoutes");
+const groupRoutes = require("./routes/groupRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 const chatRoutes = require("./routes/chatRoutes");
-const userRoutes = require("./routes/userRoutes");
-const chatRoomRoutes = require("./routes/chatRoomRoutes");
 
 const app = express();
 app.use(express.json());
@@ -22,9 +22,9 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 app.use("/api/auth", authRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/chat-room", chatRoomRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/chats", chatRoutes);
 
 setupSocket(io);
 

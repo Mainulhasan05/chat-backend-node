@@ -2,19 +2,23 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 const User = require("./userModel");
 
-const ChatRoom = sequelize.define(
-  "ChatRoom",
+const Group = sequelize.define(
+  "Group",
   {
     name: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    room_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
       unique: true,
     },
-    password: {
+    avatar: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    ownerId: {
+    created_by: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -28,4 +32,6 @@ const ChatRoom = sequelize.define(
   }
 );
 
-module.exports = ChatRoom;
+Group.belongsTo(User, { as: "creator", foreignKey: "created_by" });
+
+module.exports = Group;

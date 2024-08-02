@@ -1,98 +1,71 @@
+// controllers/authController.js
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const dotenv = require("dotenv");
-dotenv.config();
 const User = require("../models/userModel");
-const ChatRoom = require("../models/chatRoomModel");
-const UserChatRoom = require("../models/userChatRoom");
 const sendResponse = require("../utils/sendResponse");
 
-exports.login = async (req, res) => {
-  const { username, password } = req.body;
-
-  if (username.length < 3) {
-    return res
-      .status(400)
-      .json({ error: "Username must be at least 3 characters long" });
-  }
-  if (password.length < 5) {
-    return res
-      .status(400)
-      .json({ error: "Password must be at least 5 characters long" });
-  }
+exports.register = async (req, res) => {
+  const { full_name, phone, password, avatar } = req.body;
 
   try {
-    // Check if user exists
-    let user = await User.findOne({ where: { username } });
-
-    if (user) {
-      // User exists, validate password
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
-        return res.status(400).json({ error: "Password doesn't match" });
-      }
-    } else {
-      // User does not exist, create new user
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user = await User.create({ username, password: hashedPassword });
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { phone } });
+    if (existingUser) {
+      return sendResponse(res, 400, false, "User already exists", null);
     }
 
-    // Search for the public_chat room
-    const publicChatRoom = await ChatRoom.findOne({
-      where: { name: "public_room" },
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a unique room ID for the user
+    const room_id = `room_${phone}`;
+
+    // Create a new user
+    const newUser = await User.create({
+      full_name,
+      phone,
+      password: hashedPassword,
+      avatar,
+      room_id,
     });
 
-    if (publicChatRoom) {
-      // Check if the user is already associated with the public_chat room
-      const userChatRoom = await UserChatRoom.findOne({
-        where: { UserId: user.id, ChatRoomId: publicChatRoom.id },
-      });
+    // Create a JWT token
+    const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "990d",
+    });
 
-      if (!userChatRoom) {
-        // If the user is not associated, create the association
-        await UserChatRoom.create({
-          UserId: user.id,
-          ChatRoomId: publicChatRoom.id,
-        });
-      }
-    }
-
-    // Generate token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY);
-    sendResponse(res, 200, true, "User authenticated successfully", {
-      user,
+    return sendResponse(res, 201, true, "User registered successfully", {
       token,
+      user: newUser,
     });
-  } catch (err) {
-    sendResponse(res, 400, false, err.message, null);
+  } catch (error) {
+    return sendResponse(res, 500, false, "Internal server error", null);
   }
 };
 
-exports.getUserChatRooms = async (req, res) => {
-  const userId = req.user.id;
+exports.login = async (req, res) => {
+  const { phone, password } = req.body;
 
   try {
-    const user = await User.findByPk(userId, {
-      include: {
-        model: ChatRoom,
-        through: {
-          attributes: [],
-        },
-      },
-    });
-
+    // Check if user exists
+    const user = await User.findOne({ where: { phone } });
     if (!user) {
-      return sendResponse(res, 404, false, "User not found", null);
+      return sendResponse(res, 400, false, "Invalid phone or password", null);
     }
 
-    sendResponse(
-      res,
-      200,
-      true,
-      "User's chat rooms fetched successfully",
-      user.ChatRooms
-    );
-  } catch (err) {
-    sendResponse(res, 400, false, err.message, null);
+    // Check if password is correct
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return sendResponse(res, 400, false, "Invalid phone or password", null);
+    }
+
+    // Create a JWT token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "990d",
+    });
+
+    return sendResponse(res, 200, true, "Login successful", { token, user });
+  } catch (error) {
+    return sendResponse(res, 500, false, "Internal server error", null);
   }
 };

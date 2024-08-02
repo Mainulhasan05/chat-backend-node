@@ -4,7 +4,11 @@ const sequelize = require("../config/database");
 const User = sequelize.define(
   "User",
   {
-    username: {
+    full_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    phone: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
@@ -13,9 +17,18 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    avatar: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     last_seen: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    room_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
     },
   },
   {

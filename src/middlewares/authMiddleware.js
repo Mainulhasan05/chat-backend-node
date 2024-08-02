@@ -1,15 +1,30 @@
+// middlewares/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+const sendResponse = require("../utils/sendResponse");
 
-exports.authenticate = async (req, res, next) => {
-  const token = req.header("Authorization").replace("Bearer ", "");
+exports.protect = async (req, res, next) => {
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    try {
+      token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-  try {
-    const decoded = jwt.verify(token, "your_jwt_secret_key");
+      req.user = await User.findByPk(decoded.id);
+      if (!req.user) {
+        return sendResponse(res, 401, false, "Not authorized", null);
+      }
 
-    req.user = decoded;
-    next();
-  } catch (err) {
-    res.status(401).send({ error: "Please authenticate." });
+      next();
+    } catch (error) {
+      return sendResponse(res, 401, false, "Not authorized", null);
+    }
+  }
+
+  if (!token) {
+    return sendResponse(res, 401, false, "Not authorized, no token", null);
   }
 };

@@ -1,9 +1,10 @@
+// routes/authRoutes.js
 const express = require("express");
-const { login, getUserChatRooms } = require("../controllers/authController");
-const router = express.Router();
-const { authenticate } = require("../middlewares/authMiddleware");
+const { register, login } = require("../controllers/authController");
 
+const router = express.Router();
+
+router.post("/register", register);
 router.post("/login", login);
-router.get("/chat-rooms", authenticate, getUserChatRooms);
 
 module.exports = router;

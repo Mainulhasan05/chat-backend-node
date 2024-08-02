@@ -1,11 +1,10 @@
+// routes/chatRoutes.js
 const express = require("express");
-const { sendMessage, getMessages } = require("../controllers/chatController");
-const { authenticate } = require("../middlewares/authMiddleware");
-const router = express.Router();
-// const configureMulter = require("../utils/multerConfig");
-// const uploads = configureMulter("/uploads");
+const { getUserChats } = require("../controllers/chatController");
+const { protect } = require("../middlewares/authMiddleware");
 
-router.post("/send", authenticate, sendMessage);
-router.get("/get-messages/:chatRoomId", authenticate, getMessages);
+const router = express.Router();
+
+router.get("/", protect, getUserChats);
 
 module.exports = router;

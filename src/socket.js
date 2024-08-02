@@ -1,6 +1,5 @@
 const jwt = require("jsonwebtoken");
 const User = require("./models/userModel");
-const ChatRoom = require("./models/chatRoomModel");
 
 const setupSocket = (io) => {
   let activeUsers = {};
@@ -8,33 +7,16 @@ const setupSocket = (io) => {
   io.on("connection", (socket) => {
     console.log("New connection", socket.id);
 
-    socket.on("joinRoom", async ({ token, roomId }) => {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        const user = await User.findByPk(decoded.id);
-        const chatRoom = await ChatRoom.findByPk(roomId);
+    socket.on("join-room", (data) => {
+      socket.join("rifat");
+      console.log(socket.id, "joined room rifat");
+    });
+    socket.on("send", (data) => {
+      io.to("rifat").emit("receive", data);
+    });
 
-        if (!user || !chatRoom) {
-          socket.emit("error", "Invalid user or room.");
-          return;
-        }
-
-        socket.join(roomId);
-
-        if (!activeUsers[roomId]) {
-          activeUsers[roomId] = [];
-        }
-
-        if (!activeUsers[roomId].includes(user.id)) {
-          activeUsers[roomId].push(user.id);
-        }
-
-        io.to(roomId).emit("activeUsers", activeUsers[roomId]);
-
-        console.log(`User ${user.username} joined room ${roomId}`);
-      } catch (error) {
-        socket.emit("error", "Authentication failed.");
-      }
+    socket.on("event-name", (data) => {
+      console.log(data);
     });
 
     socket.on("leaveRoom", async ({ token, roomId }) => {
@@ -84,19 +66,12 @@ const setupSocket = (io) => {
 
     socket.on(
       "new_message",
-      async ({ token, roomId, username, content, userId, createdAt }) => {
+      async ({ token, roomId, username, content, User, userId, createdAt }) => {
         try {
-          // const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-          // const user = await User.findByPk(decoded.id);
-
-          // if (!user) {
-          //   socket.emit("error", "Invalid user.");
-          //   return;
-          // }
-
           io.to(roomId).emit("new_message", {
             username,
             userId,
+            User,
             content,
             createdAt,
           });
